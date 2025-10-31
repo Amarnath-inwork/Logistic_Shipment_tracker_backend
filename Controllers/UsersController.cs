@@ -1,6 +1,7 @@
 ﻿using Logistic_Shipment_tracker.Data;
 using Logistic_Shipment_tracker.DTOs;
 using Logistic_Shipment_tracker.Models;
+using Logistic_Shipment_tracker.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -16,11 +17,13 @@ namespace Logistic_Shipment_tracker.Controllers
     {
         private readonly ApplicationDBContext _context;
         private readonly ILogger<UsersController> _logger;
+        private readonly IAuditLogService _auditLogService;
 
-        public UsersController(ApplicationDBContext context, ILogger<UsersController> logger)
+        public UsersController(ApplicationDBContext context, ILogger<UsersController> logger, IAuditLogService auditLogService)
         {
             _context = context;
             _logger = logger;
+            _auditLogService = auditLogService;
         }
 
         [HttpGet]
@@ -124,6 +127,9 @@ namespace Logistic_Shipment_tracker.Controllers
 
             await _context.SaveChangesAsync();
 
+            // Log user update
+            await _auditLogService.LogActionAsync(userId, $"Updated user profile for {user.FullName}", "Users", id);
+
             return NoContent();
         }
 
@@ -131,6 +137,12 @@ namespace Logistic_Shipment_tracker.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteUser(Guid id)
         {
+            var stringUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(stringUserId) || !Guid.TryParse(stringUserId, out Guid currentUserId))
+            {
+                return BadRequest("Invalid User id");
+            }
+
             var user = await _context.Users.FindAsync(id);
             if(user == null)
             {
@@ -167,6 +179,9 @@ namespace Logistic_Shipment_tracker.Controllers
             {
                 _context.Users.Remove(user);
                 await _context.SaveChangesAsync();
+
+                // Log user deletion
+                await _auditLogService.LogActionAsync(currentUserId, $"Deleted user {user.FullName} ({user.Email})", "Users", id);
             }
             catch (Exception ex)
             {

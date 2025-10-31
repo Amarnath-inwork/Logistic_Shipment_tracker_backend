@@ -21,17 +21,20 @@ namespace Logistic_Shipment_tracker.Controllers
         private readonly INotificationService _notificationService;
         private readonly IDriverAssignmentService _driverAssignmentService;
         private readonly ILogger<ShipmentsController> _logger;
+        private readonly IAuditLogService _auditLogService;
 
         public ShipmentsController(
    ApplicationDBContext context,
        INotificationService notificationService,
       IDriverAssignmentService driverAssignmentService,
-     ILogger<ShipmentsController> logger)
+     ILogger<ShipmentsController> logger,
+         IAuditLogService auditLogService)
         {
             _dbContext = context;
             _notificationService = notificationService;
             _driverAssignmentService = driverAssignmentService;
             _logger = logger;
+            _auditLogService = auditLogService;
         }
 
         [HttpGet]
@@ -324,7 +327,11 @@ namespace Logistic_Shipment_tracker.Controllers
             // Notify about shipment creation
             await _notificationService.NotifyShipmentStatusChangeAsync(shipment, "Created");
 
+            // Log shipment creation
+            await _auditLogService.LogActionAsync(userId, $"Created shipment with tracking number {shipment.TrackingNumber}", "Shipments", shipment.Id);
+
             var response = new ShipmentResponse
+
             {
                 Id = shipment.Id,
                 TrackingNumber = shipment.TrackingNumber,
@@ -430,10 +437,13 @@ namespace Logistic_Shipment_tracker.Controllers
             await _dbContext.SaveChangesAsync();
 
             // send notification 
-            await _notificationService.NotifyShipmentStatusChangeAsync(
-                shipment,
+         await _notificationService.NotifyShipmentStatusChangeAsync(
+        shipment,
                 request.Status.ToString()
-            );
+        );
+
+            // Log shipment status update
+         await _auditLogService.LogActionAsync(currentUserId, $"Updated shipment {shipment.TrackingNumber} status to {request.Status}", "Shipments", id);
 
             return NoContent();
         }
@@ -604,6 +614,9 @@ namespace Logistic_Shipment_tracker.Controllers
 
             // Send notification
             await _notificationService.NotifyShipmentStatusChangeAsync(shipment, "Cancelled");
+
+            // Log shipment cancellation
+  await _auditLogService.LogActionAsync(currentUserId, $"Cancelled shipment {shipment.TrackingNumber}", "Shipments", id);
 
             return NoContent();
         }

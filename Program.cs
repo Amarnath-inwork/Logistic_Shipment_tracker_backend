@@ -86,6 +86,8 @@ builder.Services.AddScoped<SmsService>();
 builder.Services.AddScoped<IDriverAssignmentService, DriverAssignmentService>();
 builder.Services.AddScoped<IDistanceService, NominatimDistanceService>();
 builder.Services.AddScoped<IReportService ,ReportService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

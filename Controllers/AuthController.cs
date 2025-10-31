@@ -18,13 +18,15 @@ namespace Logistic_Shipment_tracker.Controllers
         private readonly ITokenService _tokenService;
         private readonly IWebHostEnvironment _environment;
         private readonly IDriverAssignmentService _driverAssignmentService;
+        private readonly IAuditLogService _auditLogService;
 
-        public AuthController(ApplicationDBContext context , ITokenService tokenService , IWebHostEnvironment environment , IDriverAssignmentService driverAssignmentService)
+        public AuthController(ApplicationDBContext context , ITokenService tokenService , IWebHostEnvironment environment , IDriverAssignmentService driverAssignmentService, IAuditLogService auditLogService)
         {
             _dbContext = context;
             _tokenService = tokenService;
             _environment = environment;
             _driverAssignmentService = driverAssignmentService;
+            _auditLogService = auditLogService;
         }
 
         private CookieOptions GetCookieOptions()
@@ -67,6 +69,8 @@ namespace Logistic_Shipment_tracker.Controllers
                 await _driverAssignmentService.CreateDriverProfileAsync(user.Id);
             }
 
+            // Log user registration
+            await _auditLogService.LogActionAsync(user.Id, "User registered", "Users", user.Id);
 
             var token = _tokenService.GenerateToken(user);
             Response.Cookies.Append("auth_token", token, GetCookieOptions());
@@ -99,6 +103,9 @@ namespace Logistic_Shipment_tracker.Controllers
                 return BadRequest("Invalid Credentials");
             }
 
+            // Log user login
+            await _auditLogService.LogActionAsync(user.Id, "User logged in", "Users", user.Id);
+
             var token = _tokenService.GenerateToken(user);
 
             Response.Cookies.Append("auth_token" , token , GetCookieOptions());
@@ -118,8 +125,16 @@ namespace Logistic_Shipment_tracker.Controllers
         }
 
         [HttpPost("logout")]
-        public ActionResult logout()
+        [Authorize]
+        public async Task<ActionResult> logout()
         {
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userIdString) && Guid.TryParse(userIdString, out var userId))
+            {
+                // Log user logout
+                await _auditLogService.LogActionAsync(userId, "User logged out", "Users", userId);
+            }
+
             Response.Cookies.Delete("auth_token", GetCookieOptions());
             return Ok(new { message = "Logged out successfully"});
         }

@@ -17,6 +17,8 @@ namespace Logistic_Shipment_tracker.Data
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<Report> Reports { get; set; }
         public DbSet<DriverRating> DriverRatings { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -129,6 +131,18 @@ namespace Logistic_Shipment_tracker.Data
                     .WithMany()
                     .HasForeignKey(e => e.ShipmentId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // AuditLog configuration
+            modelBuilder.Entity<AuditLog>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity
+                    .HasOne(e => e.User)
+                    .WithMany(u => u.AuditLogs)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

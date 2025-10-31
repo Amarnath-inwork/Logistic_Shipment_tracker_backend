@@ -37,6 +37,8 @@ namespace Logistic_Shipment_tracker.Models
         public ICollection<Shipment> AssignedShipments { get; set; } = new List<Shipment>();
         public ICollection<TrackingUpdate> TrackingUpdates { get; set; } = new List<TrackingUpdate>();
         public ICollection<Report> GeneratedReports { get; set; } = new List<Report>();
+        public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
+
 
     }
 }
