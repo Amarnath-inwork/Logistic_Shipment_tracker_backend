@@ -12,6 +12,8 @@ namespace Logistic_Shipment_tracker.Models
 
     public class User
     {
+        private string _email = string.Empty;
+
         public Guid Id { get; set; } = Guid.NewGuid();
         [Required]
         [StringLength(100)]
@@ -20,7 +22,12 @@ namespace Logistic_Shipment_tracker.Models
         [Required]
         [StringLength(100)]
         [EmailAddress]
-        public required string Email { get; set; } = string.Empty;
+        public required string Email
+        {
+            get => _email;
+            set => _email = value?.ToLowerInvariant() ?? string.Empty;
+        }
+
         [Required]
         [StringLength(255)]
         public required string Password { get; set; } = string.Empty;
